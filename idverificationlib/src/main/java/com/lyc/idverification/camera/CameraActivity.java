@@ -169,4 +169,5 @@ public class CameraActivity extends Activity implements View.OnClickListener {
         }
         return bitmap;
     }
+
 }
