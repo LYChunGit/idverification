@@ -14,29 +14,26 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
-
 import com.lyc.idverification.R;
-import com.lyc.idverification.app.App;
 import com.lyc.idverification.util.ResourceUtil;
 import com.lyc.idverification.util.RxThreadPoolTool;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 
 public class CameraActivity extends Activity implements View.OnClickListener {
     public final static int REQUEST_CODE = 0X13;
-    public final static String RESULT_CODE = "0x200";
-    public final static String CAMERA_ACTIVITY_TYPE = "CAMERA_ACTIVITY_TYPE";
-    public final static String CAMERA_ACTIVITY_PATH = "CAMERA_ACTIVITY_PATH";
-    public final static String CAMERA_ACTIVITY_IMAGE_RESOURCE = "CAMERA_ACTIVITY_IMAGE_RESOURCE";
-    private CustomCameraPreview customCameraPreview;
-    private View containerView;
-    private ImageView cropView;
-    private View optionView;
+    public final static String RESULT_IMAGER = "RESULT_IMAGER";//返回图片地址
+    public final static String CAMERA_ACTIVITY_TYPE = "CAMERA_ACTIVITY_TYPE";//返回图片类型
+    public final static String CAMERA_ACTIVITY_PATH = "CAMERA_ACTIVITY_PATH";//外部传入图片地址
+    public final static String CAMERA_ACTIVITY_IMAGE_RESOURCE = "CAMERA_ACTIVITY_IMAGE_RESOURCE";//外部传入的相框视图
+    private CustomCameraPreview mCustomCameraPreview;
+    private View mContainerView;
+    private ImageView mCropView;
+    private View mOptionView;
     private int mCameraImageResource, mCameraType;
     private String mCameraPath;
-    RxThreadPoolTool mRxThreadPoolTool;
+    private RxThreadPoolTool mRxThreadPoolTool;
     /**
      * 跳转到拍照页面
      */
@@ -58,10 +55,10 @@ public class CameraActivity extends Activity implements View.OnClickListener {
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         setContentView(R.layout.activity_camera);
 
-        customCameraPreview = (CustomCameraPreview) findViewById(R.id.camera_surface);
-        containerView = findViewById(R.id.camera_crop_container);
-        cropView = (ImageView) findViewById(R.id.camera_crop);
-        optionView = findViewById(R.id.camera_option);
+        mCustomCameraPreview = (CustomCameraPreview) findViewById(R.id.camera_surface);
+        mContainerView = findViewById(R.id.camera_crop_container);
+        mCropView = (ImageView) findViewById(R.id.camera_crop);
+        mOptionView = findViewById(R.id.camera_option);
 
         //获取屏幕最小边，设置为cameraPreview较窄的一边
         float screenMinSize = Math.min(ResourceUtil.getDisplayMetrics().widthPixels, ResourceUtil.getDisplayMetrics().heightPixels);
@@ -71,17 +68,16 @@ public class CameraActivity extends Activity implements View.OnClickListener {
 
         layoutParams = new RelativeLayout.LayoutParams((int) maxSize, (int) screenMinSize);
         layoutParams.addRule(RelativeLayout.CENTER_IN_PARENT);
-        customCameraPreview.setLayoutParams(layoutParams);
+        mCustomCameraPreview.setLayoutParams(layoutParams);
 
         float height = (int) (screenMinSize * 0.75);
         float width = (int) (height * 75.0f / 47.0f);
         LinearLayout.LayoutParams containerParams = new LinearLayout.LayoutParams((int) width, ViewGroup.LayoutParams.MATCH_PARENT);
         LinearLayout.LayoutParams cropParams = new LinearLayout.LayoutParams((int) width, (int) height);
-        containerView.setLayoutParams(containerParams);
-        cropView.setLayoutParams(cropParams);
-        cropView.setImageResource(mCameraImageResource);
-        customCameraPreview.setOnClickListener(this);
-        customCameraPreview.focus();//自动对焦
+        mContainerView.setLayoutParams(containerParams);
+        mCropView.setLayoutParams(cropParams);
+        mCropView.setImageResource(mCameraImageResource);
+        mCustomCameraPreview.setOnClickListener(this);
         findViewById(R.id.camera_close).setOnClickListener(this);
         findViewById(R.id.camera_take).setOnClickListener(this);
     }
@@ -90,7 +86,7 @@ public class CameraActivity extends Activity implements View.OnClickListener {
     public void onClick(View v) {
         int i = v.getId();
         if (i == R.id.camera_surface) {
-            customCameraPreview.focus();
+            mCustomCameraPreview.focus();
         } else if (i == R.id.camera_close) {
             this.finish();
         } else if (i == R.id.camera_take) {
@@ -99,9 +95,9 @@ public class CameraActivity extends Activity implements View.OnClickListener {
     }
 
     private void takePhoto(final String imgPath, final int cameraType) {
-        optionView.setVisibility(View.GONE);
-        customCameraPreview.setEnabled(false);
-        customCameraPreview.takePhoto(new Camera.PictureCallback() {
+        mOptionView.setVisibility(View.GONE);
+        mCustomCameraPreview.setEnabled(false);
+        mCustomCameraPreview.takePhoto(new Camera.PictureCallback() {
             public void onPictureTaken(final byte[] data, final Camera camera) {
                 //子线程处理图片，防止ANR
                 mRxThreadPoolTool.execute(new Runnable() {
@@ -114,10 +110,10 @@ public class CameraActivity extends Activity implements View.OnClickListener {
                         }
                         if (bitmap != null) {
                             //计算裁剪位置
-                            float left = ((float) containerView.getLeft() - (float) customCameraPreview.getLeft()) / (float) customCameraPreview.getWidth();
-                            float top = (float) cropView.getTop() / (float) customCameraPreview.getHeight();
-                            float right = (float) containerView.getRight() / (float) customCameraPreview.getWidth();
-                            float bottom = (float) cropView.getBottom() / (float) customCameraPreview.getHeight();
+                            float left = ((float) mContainerView.getLeft() - (float) mCustomCameraPreview.getLeft()) / (float) mCustomCameraPreview.getWidth();
+                            float top = (float) mCropView.getTop() / (float) mCustomCameraPreview.getHeight();
+                            float right = (float) mContainerView.getRight() / (float) mCustomCameraPreview.getWidth();
+                            float bottom = (float) mCropView.getBottom() / (float) mCustomCameraPreview.getHeight();
 
                             //裁剪及保存到文件
                             Bitmap resBitmap = Bitmap.createBitmap(bitmap,
@@ -135,7 +131,7 @@ public class CameraActivity extends Activity implements View.OnClickListener {
 
                             //拍照完成，返回对应图片路径
                             Intent intent = new Intent();
-                            intent.putExtra(RESULT_CODE, imgPath);
+                            intent.putExtra(RESULT_IMAGER, imgPath);
                             intent.putExtra(CAMERA_ACTIVITY_TYPE, cameraType);
                             setResult(RESULT_OK, intent);
                             finish();

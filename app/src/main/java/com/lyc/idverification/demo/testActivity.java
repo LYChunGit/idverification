@@ -17,7 +17,7 @@ import com.tbruyelle.rxpermissions2.Permission;
 import com.tbruyelle.rxpermissions2.RxPermissions;
 
 import static com.lyc.idverification.camera.CameraActivity.CAMERA_ACTIVITY_TYPE;
-import static com.lyc.idverification.camera.CameraActivity.RESULT_CODE;
+import static com.lyc.idverification.camera.CameraActivity.RESULT_IMAGER;
 
 public class testActivity extends AppCompatActivity {
     Button mBtnOpen;
@@ -65,7 +65,7 @@ public class testActivity extends AppCompatActivity {
         if (resultCode != RESULT_OK) {
             return;
         }
-        String imagePath = data.getStringExtra(RESULT_CODE);
+        String imagePath = data.getStringExtra(RESULT_IMAGER);
         int imageType = data.getIntExtra(CAMERA_ACTIVITY_TYPE,0);
         if (!TextUtils.isEmpty(imagePath)){
             Toast.makeText(testActivity.this,"图片地址:"+imagePath+" 返回图片类型："+imageType,Toast.LENGTH_LONG).show();
