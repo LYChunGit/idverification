@@ -52,7 +52,7 @@
              super.onActivityResult(requestCode, resultCode, data);
          }
 ```
-* 5、![Image text](https://raw.github.com/idverification/img/one.jpg)
-![Image text](https://raw.github.com/idverification/img/two.jpg)
+* 5、![Image text](https://github.com/LYChunGit/idverification/blob/master/img/one.jpg?raw=true)
+![Image text](https://github.com/LYChunGit/idverification/blob/master/img/two.jpg?raw=true)
 
 
