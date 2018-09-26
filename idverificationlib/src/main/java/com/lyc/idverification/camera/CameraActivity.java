@@ -8,18 +8,18 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.hardware.Camera;
 import android.os.Bundle;
-import android.text.TextUtils;
+import android.provider.MediaStore;
+import android.support.v4.app.FragmentManager;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+
 import com.lyc.idverification.R;
-import com.lyc.idverification.util.ResourceUtil;
+import com.lyc.idverification.bottomdialog.BottomDialog;
 import com.lyc.idverification.util.RxThreadPoolTool;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.FileOutputStream;
+import com.lyc.idverification.util.SystemUtil;
 
 public class CameraActivity extends Activity implements View.OnClickListener {
     public final static int REQUEST_CODE = 0X13;
@@ -34,6 +34,52 @@ public class CameraActivity extends Activity implements View.OnClickListener {
     private int mCameraImageResource, mCameraType;
     private String mCameraPath;
     private RxThreadPoolTool mRxThreadPoolTool;
+
+//    @Override
+//    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+//        if (resultCode != RESULT_OK) {
+//            return;
+//        }
+//        String imagePath = data.getStringExtra(RESULT_IMAGER);
+//        int imageType = data.getIntExtra(CAMERA_ACTIVITY_TYPE,0);
+//
+//        super.onActivityResult(requestCode, resultCode, data);
+//    }
+
+    public static void SelectImageAndCamera(final Context mContext, FragmentManager manager, final int mCameraType, final int cameraImageResource, final String PATH_IMAGE) {
+        final BottomDialog mBottomSelectImageAndCameraDialog = new BottomDialog();
+
+        mBottomSelectImageAndCameraDialog.setFragmentManager(manager)
+                .setViewListener(new BottomDialog.ViewListener() {
+                    @Override
+                    public void bindView(View v) {
+                            RelativeLayout mRlOpenImage = (RelativeLayout) v.findViewById(R.id.rl_open_image);
+                            RelativeLayout mRlOpenCamera = (RelativeLayout) v.findViewById(R.id.rl_open_camera);
+                            mRlOpenImage.setOnClickListener(new View.OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+                                    Intent albumIntent = new Intent(Intent.ACTION_PICK, null);
+                                    albumIntent.setDataAndType(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "image/*");
+                                    ((Activity) mContext).startActivityForResult(albumIntent, mCameraType);
+                                    mBottomSelectImageAndCameraDialog.dismiss();
+                                }
+                            });
+                            mRlOpenCamera.setOnClickListener(new View.OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+                                    navToCamera(mContext, mCameraType, cameraImageResource, PATH_IMAGE);
+                                    mBottomSelectImageAndCameraDialog.dismiss();
+                                }
+                            });
+
+                    }
+                })
+                .setLayoutRes(R.layout.dialog_select_image_and_camera_layout)
+//                        .setDimAmount(0.9f)
+                .setTag("BottomDialog")
+                .show();
+    }
+
     /**
      * 跳转到拍照页面
      */
@@ -51,7 +97,7 @@ public class CameraActivity extends Activity implements View.OnClickListener {
         mCameraImageResource = getIntent().getIntExtra(CAMERA_ACTIVITY_IMAGE_RESOURCE, 0);//图片方框
         mCameraPath = getIntent().getStringExtra(CAMERA_ACTIVITY_PATH);//图片地址
         mCameraType = getIntent().getIntExtra(CAMERA_ACTIVITY_TYPE, 0);//图片类型
-        mRxThreadPoolTool = new RxThreadPoolTool(RxThreadPoolTool.Type.CachedThread,1);
+        mRxThreadPoolTool = new RxThreadPoolTool(RxThreadPoolTool.Type.CachedThread, 1);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         setContentView(R.layout.activity_camera);
 
@@ -61,7 +107,7 @@ public class CameraActivity extends Activity implements View.OnClickListener {
         mOptionView = findViewById(R.id.camera_option);
 
         //获取屏幕最小边，设置为cameraPreview较窄的一边
-        float screenMinSize = Math.min(ResourceUtil.getDisplayMetrics().widthPixels, ResourceUtil.getDisplayMetrics().heightPixels);
+        float screenMinSize = Math.min(getResources().getDisplayMetrics().widthPixels, getResources().getDisplayMetrics().heightPixels);
         //根据screenMinSize，计算出cameraPreview的较宽的一边，长宽比为标准的16:9
         float maxSize = screenMinSize / 9.0f * 16.0f;
         RelativeLayout.LayoutParams layoutParams;
@@ -121,7 +167,7 @@ public class CameraActivity extends Activity implements View.OnClickListener {
                                     (int) (top * (float) bitmap.getHeight()),
                                     (int) ((right - left) * (float) bitmap.getWidth()),
                                     (int) ((bottom - top) * (float) bitmap.getHeight()));
-                            compressImage(resBitmap, imgPath);//等比例缩小
+                            SystemUtil.compressImage(resBitmap, imgPath);//等比例缩小
                             if (!bitmap.isRecycled()) {
                                 bitmap.recycle();
                             }
@@ -143,27 +189,6 @@ public class CameraActivity extends Activity implements View.OnClickListener {
         });
     }
 
-    // 图片质量压缩
-    public static Bitmap compressImage(Bitmap image, String srcPath) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        image.compress(Bitmap.CompressFormat.JPEG, 100, baos);// 质量压缩方法，这里100表示不压缩，把压缩后的数据存放到baos中
-        int options = 100;
-        while (baos.toByteArray().length / 1024 > 100) { // 循环判断如果压缩后图片是否大于100kb,大于继续压缩
-            baos.reset();// 重置baos即清空baos
-            image.compress(Bitmap.CompressFormat.JPEG, options, baos);// 这里压缩options%，把压缩后的数据存放到baos中
-            options -= 10;// 每次都减少10
-        }
-        ByteArrayInputStream isBm = new ByteArrayInputStream(baos.toByteArray());// 把压缩后的数据baos存放到ByteArrayInputStream中
-        Bitmap bitmap = BitmapFactory.decodeStream(isBm, null, null);// 把ByteArrayInputStream数据生成图片
-        if (!TextUtils.isEmpty(srcPath)) {
-            try {
-                FileOutputStream out = new FileOutputStream(srcPath);
-                bitmap.compress(Bitmap.CompressFormat.PNG, 90, out);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-        return bitmap;
-    }
+
 
 }

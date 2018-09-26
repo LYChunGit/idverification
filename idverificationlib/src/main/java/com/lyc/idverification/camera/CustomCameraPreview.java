@@ -6,7 +6,7 @@ import android.hardware.Camera;
 import android.util.AttributeSet;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-import com.lyc.idverification.util.ResourceUtil;
+
 import java.util.List;
 
 public class CustomCameraPreview extends SurfaceView implements SurfaceHolder.Callback {
@@ -61,7 +61,7 @@ public class CustomCameraPreview extends SurfaceView implements SurfaceHolder.Ca
         try {
             mCamera.setPreviewDisplay(holder);
             Camera.Parameters parameters = mCamera.getParameters();
-            if (ResourceUtil.getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+            if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
                 //竖屏拍照时，需要设置旋转90度，否者看到的相机预览方向和界面方向不相同
                 mCamera.setDisplayOrientation(90);
                 parameters.setRotation(90);
@@ -83,7 +83,7 @@ public class CustomCameraPreview extends SurfaceView implements SurfaceHolder.Ca
         } catch (Exception e) {
             try {
                 Camera.Parameters parameters = mCamera.getParameters();
-                if (ResourceUtil.getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+                if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
                     mCamera.setDisplayOrientation(90);
                     parameters.setRotation(90);
                 } else {
